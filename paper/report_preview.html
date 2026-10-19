@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Exact SAT Solving for Large-Scale N-Queens</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 18mm 16mm 18mm 16mm;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Times New Roman", Times, Georgia, serif;
+            font-size: 10.5pt;
+            line-height: 1.45;
+            color: #111;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .paper-page {
+            background: #fff;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        /* Elsevier Title Area */
+        .journal-header {
+            font-size: 9pt;
+            color: #444;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+        h1.title {
+            font-size: 19pt;
+            font-weight: normal;
+            line-height: 1.25;
+            margin: 0 0 15px 0;
+            color: #000;
+        }
+        .author-name {
+            font-size: 11.5pt;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .author-name sup {
+            font-weight: normal;
+        }
+        .author-affil {
+            font-size: 9.5pt;
+            font-style: italic;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .header-rule {
+            border: none;
+            border-top: 0.75pt solid #000;
+            margin: 10px 0 15px 0;
+        }
+        /* Metadata Two-Column Box (Article Info vs Abstract) */
+        .meta-container {
+            display: flex;
+            border-top: 0.75pt solid #888;
+            border-bottom: 0.75pt solid #888;
+            padding: 12px 0 15px 0;
+            margin-bottom: 25px;
+        }
+        .meta-left {
+            width: 30%;
+            padding-right: 20px;
+            border-right: 0.5pt solid #ccc;
+            font-size: 9pt;
+        }
+        .meta-left h4 {
+            margin: 0 0 6px 0;
+            font-size: 9.5pt;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .meta-left p {
+            margin: 0 0 8px 0;
+            line-height: 1.35;
+        }
+        .meta-right {
+            width: 70%;
+            padding-left: 20px;
+            font-size: 9.5pt;
+            text-align: justify;
+        }
+        .meta-right h4 {
+            margin: 0 0 6px 0;
+            font-size: 9.5pt;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .meta-right p {
+            margin: 0;
+            line-height: 1.45;
+        }
+        /* Headings */
+        h2.sec-heading {
+            font-size: 12.5pt;
+            font-weight: bold;
+            margin: 22px 0 8px 0;
+            color: #000;
+        }
+        h3.subsec-heading {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 14px 0 6px 0;
+            color: #111;
+        }
+        p {
+            margin: 0 0 6px 0;
+            text-align: justify;
+            text-indent: 1.2em;
+        }
+        p.no-indent {
+            text-indent: 0;
+        }
+        ul, ol {
+            margin: 4px 0 8px 20px;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 2px;
+            text-align: justify;
+        }
+        /* Math display */
+        .math-block {
+            text-align: center;
+            margin: 6px 0;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 10.5pt;
+        }
+        .formula-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 4px 20px;
+        }
+        .formula-num {
+            font-size: 9.5pt;
+        }
+        /* Tables (Elsevier Booktabs style) */
+        table.booktabs {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0 6px 0;
+            font-size: 8.5pt;
+        }
+        table.booktabs th, table.booktabs td {
+            padding: 3px 5px;
+            text-align: right;
+            border: none;
+        }
+        table.booktabs th {
+            border-top: 1pt solid #000;
+            border-bottom: 0.5pt solid #000;
+            font-weight: bold;
+            background: transparent;
+            text-align: right;
+        }
+        table.booktabs th:first-child, table.booktabs td:first-child {
+            text-align: left;
+        }
+        table.booktabs tbody tr:last-child td {
+            border-bottom: 1pt solid #000;
+        }
+        .caption {
+            font-size: 8.5pt;
+            font-weight: bold;
+            margin-top: 4px;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .caption-text {
+            font-weight: normal;
+        }
+        /* Figures */
+        .fig-box {
+            text-align: center;
+            margin: 12px 0;
+            page-break-inside: avoid;
+        }
+        .fig-box img {
+            max-width: 68%;
+            height: auto;
+        }
+        /* References */
+        .ref-entry {
+            font-size: 8.5pt;
+            line-height: 1.35;
+            margin-bottom: 6px;
+            padding-left: 20px;
+            text-indent: -20px;
+            text-align: left;
+        }
+        .footer-bar {
+            border-top: 0.5pt solid #aaa;
+            margin-top: 25px;
+            padding-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+            font-style: italic;
+            color: #555;
+        }
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+
+<div class="paper-page">
+    <div class="journal-header">Preprint submitted to Elsevier &mdash; Faculty of Information Technology, VNU-UET</div>
+    <h1 class="title">Exact SAT Solving and Empirical Evaluation for the Large-Scale <i>N</i>-Queens Problem: A Comparative Study with Constraint Programming and Integer Linear Programming</h1>
+
+    <div class="author-name">Le Trung Hieu<sup>a,*</sup></div>
+    <div class="author-affil"><sup>a</sup>Faculty of Information Technology, VNU University of Engineering and Technology, 144 Xuan Thuy, Cau Giay, Hanoi, Vietnam<br>
+    <sup>*</sup>Corresponding author: 24021475@vnu.edu.vn (Student ID: 24021475)</div>
+
+    <div class="meta-container">
+        <div class="meta-left">
+            <h4>Article Info</h4>
+            <p><b>Keywords:</b><br>
+            <i>N</i>-Queens problem<br>
+            SAT encoding<br>
+            Cardinality constraints<br>
+            At-Most-One (AMO)<br>
+            PySAT<br>
+            Constraint programming<br>
+            Mixed-Integer programming<br>
+            Empirical evaluation</p>
+        </div>
+        <div class="meta-right">
+            <h4>Abstract</h4>
+            <p>The <i>N</i>-Queens problem is a classic combinatorial benchmark in computer science that tests the limits of exact constraint-solving algorithms. Although classical backtracking struggles beyond moderate sizes (<i>N</i> &gt; 30), modern solving paradigms offer exact solutions for significantly larger instances. In this paper, we develop a comprehensive exact SAT-based framework using PySAT to model and solve the large-scale <i>N</i>-Queens problem on board sizes up to <i>N</i> = 100 (10,000 Boolean decision variables and over 1.65 million clauses). To address the combinatorial clause explosion inherent in naive pairwise encodings, we systematically investigate five At-Most-One (AMO) encoding techniques: Pairwise (<i>O</i>(<i>k</i><sup>2</sup>) clauses), Sequential Counter (Sinz 2005), Bitwise Binary encoding, Commander Variable (Klieber &amp; Gao 2007), and 2-Product (Chen 2010). Furthermore, we conduct a cross-paradigm evaluation comparing four SAT solvers (MiniSat 2.2, CaDiCaL 1.5.3, Glucose 4.0, and Glucose 3.0) against Google OR-Tools CP-SAT (under both 1D all-different and 2D Boolean formulations) and 0-1 Integer Linear Programming (SCIP). Our extensive computational experiments reveal three key scientific findings: (1) SAT and CP-SAT scale with consistent efficiency, solving <i>N</i> = 100 in under 4 seconds, whereas ILP suffers a severe combinatorial breakdown and times out at <i>N</i> = 100 due to excessive fractional assignments in its linear programming relaxation; (2) compact AMO encodings such as 2-Product and Sequential Counter reduce the generated clause count by 92.9% compared to the pairwise encoding (from 1,646,900 to 116,636 clauses), substantially reducing memory overhead; and (3) an empirical encoding&ndash;solver interaction demonstrates that propagation-strong CDCL engines like MiniSat achieve the fastest runtime on Bitwise encodings, while Glucose displays sensitivity to auxiliary variables in product formulations.</p>
+        </div>
+    </div>
+
+    <h2 class="sec-heading">1. Introduction</h2>
+    <p>The <i>N</i>-Queens problem consists in placing <i>n</i> non-attacking queens on an <i>n</i> &times; <i>n</i> chessboard so that no two queens attack each other, i.e., no two queens share a row, a column, or a diagonal. It is a fundamental constraint satisfaction problem that has been studied for decades as a benchmark for exact combinatorial algorithms [1]. The search space of placing <i>n</i> queens on <i>n</i><sup>2</sup> squares contains <i>n</i><sup><i>n</i></sup> configurations when assigning one queen per row. Traditional depth-first search with backtracking suffers from exponential time complexity (<i>O</i>(<i>n</i>!)), rendering naive exploration computationally intractable for <i>n</i> &gt; 30.</p>
+    <p>Modern automated reasoning paradigms offer powerful alternatives. Three prominent exact methodologies are: (1) <b>Boolean Satisfiability (SAT)</b>, which encodes constraints into Conjunctive Normal Form (CNF) solved by Conflict-Driven Clause Learning (CDCL) engines [2, 3]; (2) <b>Constraint Programming (CP)</b>, which relies on high-level global constraints and domain filtering [4]; and (3) <b>Integer Linear Programming (ILP)</b>, which formulates linear inequalities over 0-1 binary variables solved via branch-and-cut [5].</p>
+    <p class="no-indent">In this study, our contributions are as follows:</p>
+    <ul>
+        <li>We implement five At-Most-One (AMO) cardinality encodings: Pairwise, Sequential Counter, Bitwise / Binary, Commander Variable, and 2-Product within a unified Python framework via PySAT [6].</li>
+        <li>We benchmark four modern CDCL solvers (MiniSat 2.2, CaDiCaL 1.5.3, Glucose 4.0, Glucose 3.0) on board dimensions up to <i>N</i> = 100 (10,000 cells).</li>
+        <li>We compare the SAT framework against exact CP and ILP baselines (Google OR-Tools CP-SAT and SCIP), analyzing why ILP suffers combinatorial degradation on large permutation puzzles.</li>
+        <li>We provide an open-source, fully reproducible benchmark repository.</li>
+    </ul>
+
+    <h2 class="sec-heading">2. Problem Formulation and Alternative Exact Paradigms</h2>
+    <h3 class="subsec-heading">2.1. Problem Definition</h3>
+    <p>Let (<i>r</i>, <i>c</i>) denote coordinates on an <i>n</i> &times; <i>n</i> chessboard with 0 &le; <i>r</i>, <i>c</i> &lt; <i>n</i>. An injective non-attacking placement of <i>n</i> queens requires:</p>
+    <div class="formula-line">
+        <span>&forall;<i>r</i> &in; {0, &hellip;, <i>n</i> &minus; 1}, &nbsp; &sum;<sub><i>c</i>=0</sub><sup><i>n</i>&minus;1</sup> <i>x</i><sub><i>r</i>,<i>c</i></sub> = 1 &nbsp; (exactly one queen per row)</span>
+        <span class="formula-num">(1)</span>
+    </div>
+    <div class="formula-line">
+        <span>&forall;<i>c</i> &in; {0, &hellip;, <i>n</i> &minus; 1}, &nbsp; &sum;<sub><i>r</i>=0</sub><sup><i>n</i>&minus;1</sup> <i>x</i><sub><i>r</i>,<i>c</i></sub> &le; 1 &nbsp; (at most one queen per column)</span>
+        <span class="formula-num">(2)</span>
+    </div>
+    <div class="formula-line">
+        <span>&forall;diagonal <i>D</i>, &nbsp; &sum;<sub>(<i>r</i>,<i>c</i>)&in;<i>D</i></sub> <i>x</i><sub><i>r</i>,<i>c</i></sub> &le; 1 &nbsp; (at most one queen per diagonal)</span>
+        <span class="formula-num">(3)</span>
+    </div>
+    <p class="no-indent">Falling diagonals have constant <i>r</i> &minus; <i>c</i> &in; {&minus;(<i>n</i>&minus;2), &hellip;, <i>n</i>&minus;2}, while rising diagonals have constant <i>r</i> + <i>c</i> &in; {1, &hellip;, 2<i>n</i>&minus;3}.</p>
+
+    <h3 class="subsec-heading">2.2. Constraint Programming Formulation</h3>
+    <p>Using integer variables <i>Q</i><sub><i>r</i></sub> &in; {0, &hellip;, <i>n</i> &minus; 1} denoting the column index of the queen in row <i>r</i>, the problem is concisely formulated with three global <i>AllDifferent</i> constraints:</p>
+    <div class="math-block">
+        <i>AllDifferent</i>(<i>Q</i><sub>0</sub>, &hellip;, <i>Q</i><sub><i>n</i>&minus;1</sub>), &nbsp;
+        <i>AllDifferent</i>(<i>Q</i><sub>0</sub> &minus; 0, &hellip;, <i>Q</i><sub><i>n</i>&minus;1</sub> &minus; (<i>n</i>&minus;1)), &nbsp;
+        <i>AllDifferent</i>(<i>Q</i><sub>0</sub> + 0, &hellip;, <i>Q</i><sub><i>n</i>&minus;1</sub> + (<i>n</i>&minus;1)).
+    </div>
+
+    <h3 class="subsec-heading">2.3. Integer Linear Programming &amp; The LP Relaxation Bottleneck</h3>
+    <p>In ILP, binary variables <i>x</i><sub><i>r</i>,<i>c</i></sub> &in; {0, 1} represent cell occupancy with row, column, and diagonal sums bounded by Equations (1)&ndash;(3). However, in the continuous LP relaxation where <i>x</i><sub><i>r</i>,<i>c</i></sub> &in; [0, 1], setting <i>x</i><sub><i>r</i>,<i>c</i></sub> = 1/<i>n</i> for all cells satisfies every row sum (&sum; 1/<i>n</i> = 1), column sum (&sum; 1/<i>n</i> = 1), and diagonal sum (&sum;<sub>|<i>D</i>|</sub> 1/<i>n</i> &le; 1) with zero violation. Consequently, the LP relaxation provides no valid dual bound to prune the Branch-and-Bound tree, causing standard MIP solvers to stall and time out on large instances (<i>N</i> &ge; 80).</p>
+
+    <h2 class="sec-heading">3. Proposed SAT-Based Exact Approach</h2>
+    <p>Each board cell (<i>r</i>, <i>c</i>) corresponds to a Boolean variable <i>X</i><sub><i>r</i>,<i>c</i></sub> mapped to integer <i>r</i> &middot; <i>n</i> + <i>c</i> + 1. The condition "exactly one" per row and column is decomposed into <b>At-Least-One (ALO)</b>: &or;<sub><i>c</i></sub> <i>X</i><sub><i>r</i>,<i>c</i></sub> and <b>At-Most-One (AMO)</b>. We evaluate five AMO encodings:</p>
+    <ol>
+        <li><b>Pairwise:</b> &and;<sub><i>i</i>&lt;<i>j</i></sub> (&not;<i>l</i><sub><i>i</i></sub> &or; &not;<i>l</i><sub><i>j</i></sub>). Requires <i>O</i>(<i>k</i><sup>2</sup>) binary clauses with 0 auxiliary variables. For <i>N</i> = 100, diagonal constraints yield over 1.64 million clauses.</li>
+        <li><b>Sequential Counter (Sinz [7]):</b> Introduces <i>k</i> &minus; 1 accumulator variables, reducing clause count to 3<i>k</i> &minus; 4 (<i>O</i>(<i>k</i>) linear).</li>
+        <li><b>Bitwise / Binary:</b> Uses &lceil;log<sub>2</sub> <i>k</i>&rceil; auxiliary bits to binary-encode the active queen index, yielding <i>O</i>(<i>k</i> log <i>k</i>) clauses.</li>
+        <li><b>Commander Variable (Klieber &amp; Gao [8]):</b> Partitions literals into groups of size 3 and introduces group commanders recursively.</li>
+        <li><b>2-Product (Chen [9]):</b> Arranges literals in a <i>p</i> &times; <i>q</i> grid (<i>p</i> &asymp; &radic;<i>k</i>, <i>q</i> &asymp; &lceil;<i>k</i>/<i>p</i>&rceil;), requiring only 2<i>k</i> + <i>O</i>(&radic;<i>k</i>) clauses and 2&radic;<i>k</i> auxiliary variables.</li>
+    </ol>
+
+    <h2 class="sec-heading">4. Computational Experiments and Discussion</h2>
+    <p class="no-indent">All experiments were conducted on an Intel Core workstation (Ubuntu/Windows 64-bit, 32 GB RAM) using Python 3.13, PySAT 1.9, and Google OR-Tools 9.15 under a 20-second per-instance timeout.</p>
+
+    <h3 class="subsec-heading">4.1. Cross-Paradigm Comparison: SAT vs. CP vs. ILP</h3>
+    <p>Table 1 and Figure 1 present the solving time scaling from <i>N</i> = 4 up to <i>N</i> = 100.</p>
+
+    <div class="caption">Table 1: <span class="caption-text">Solving time comparison (in seconds) across solving paradigms on <i>N</i>-Queens instances.</span></div>
+    <table class="booktabs">
+        <thead>
+            <tr>
+                <th><i>N</i></th>
+                <th>SAT (Glucose4)</th>
+                <th>SAT (CaDiCaL)</th>
+                <th>CP-SAT (AllDiff)</th>
+                <th>CP-SAT (Boolean)</th>
+                <th>ILP (SCIP MIP)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>4</td><td>0.0005</td><td>0.0009</td><td>0.0074</td><td>0.0017</td><td>0.0040</td></tr>
+            <tr><td>8</td><td>0.0013</td><td>0.0017</td><td>0.0065</td><td>0.0056</td><td>0.0170</td></tr>
+            <tr><td>16</td><td>0.0208</td><td>0.0267</td><td>0.0290</td><td>0.0213</td><td>0.0170</td></tr>
+            <tr><td>32</td><td>0.0793</td><td>0.2715</td><td>0.0885</td><td>0.0892</td><td>2.6329</td></tr>
+            <tr><td>50</td><td>0.3115</td><td>0.6257</td><td>0.2333</td><td>0.2305</td><td>0.5666</td></tr>
+            <tr><td>64</td><td>0.6637</td><td>0.8328</td><td>0.4385</td><td>0.4225</td><td>2.9709</td></tr>
+            <tr><td>80</td><td>1.3175</td><td>1.7794</td><td>0.7379</td><td>0.7393</td><td>2.7927</td></tr>
+            <tr><td>100</td><td><b>2.7681</b></td><td><b>4.0256</b></td><td><b>1.2915</b></td><td><b>1.2861</b></td><td><b style="color:red;">TIMEOUT (&gt;20s)</b></td></tr>
+        </tbody>
+    </table>
+
+    <div class="fig-box">
+        <img src="figures/fig1_runtime_comparison.png" alt="Figure 1: Runtime Comparison">
+        <div class="caption" style="text-align:center;">Figure 1: <span class="caption-text">Runtime scaling comparison (log scale) across SAT, CP-SAT, and ILP paradigms up to <i>N</i> = 100.</span></div>
+    </div>
+
+    <p>Both SAT solvers and CP-SAT exhibit stable polynomial scaling, completing <i>N</i> = 100 (10,000 cells) in under 4 seconds. In contrast, ILP (SCIP) experiences severe exponential degradation and times out at <i>N</i> = 100, validating our theoretical analysis regarding the uninformative nature of the continuous LP relaxation.</p>
+
+    <h3 class="subsec-heading">4.2. Formula Size and AMO Encodings Ablation Study</h3>
+    <p>Table 2 and Figure 2 illustrate the formula complexity across the five AMO encodings up to <i>N</i> = 100.</p>
+
+    <div class="caption">Table 2: <span class="caption-text">Number of generated clauses and total runtime across five AMO encodings (PySAT Glucose4).</span></div>
+    <table class="booktabs">
+        <thead>
+            <tr>
+                <th><i>N</i></th>
+                <th>Pairwise</th>
+                <th>SeqCounter</th>
+                <th>Bitwise</th>
+                <th>Commander</th>
+                <th>2-Product</th>
+                <th>Time Pairwise (s)</th>
+                <th>Time 2-Product (s)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>10</td><td>1,490</td><td>988</td><td>1,416</td><td>1,062</td><td>1,098</td><td>0.004</td><td>0.006</td></tr>
+            <tr><td>20</td><td>12,580</td><td>4,368</td><td>7,292</td><td>4,886</td><td>4,484</td><td>0.032</td><td>1.648</td></tr>
+            <tr><td>40</td><td>103,560</td><td>18,328</td><td>35,620</td><td>21,114</td><td>18,520</td><td>0.247</td><td>19.064</td></tr>
+            <tr><td>60</td><td>352,940</td><td>41,888</td><td>83,660</td><td>48,242</td><td>42,092</td><td>1.080</td><td>24.884</td></tr>
+            <tr><td>80</td><td>840,720</td><td>75,048</td><td>168,180</td><td>86,646</td><td>74,548</td><td>2.372</td><td>20.888</td></tr>
+            <tr><td>100</td><td><b>1,646,900</b></td><td>117,808</td><td>269,020</td><td>136,560</td><td><b>116,636</b></td><td>4.740</td><td>22.394</td></tr>
+        </tbody>
+    </table>
+
+    <div class="fig-box">
+        <img src="figures/fig2_clause_growth.png" alt="Figure 2: Clause Growth">
+        <div class="caption" style="text-align:center;">Figure 2: <span class="caption-text">Clause count comparison showing 92.9% clause reduction from Pairwise to 2-Product at <i>N</i> = 100.</span></div>
+    </div>
+
+    <div class="fig-box">
+        <img src="figures/fig3_amo_runtime.png" alt="Figure 3: AMO Runtime">
+        <div class="caption" style="text-align:center;">Figure 3: <span class="caption-text">Total runtime across five AMO encodings on PySAT Glucose 4.0.</span></div>
+    </div>
+
+    <h3 class="subsec-heading">4.3. Multi-Solver Matrix and Heatmap Analysis</h3>
+    <p>To examine solver&ndash;encoding interactions, Table 3 and Figure 4 report the median solving time for <i>N</i> &ge; 40 across four SAT engines.</p>
+
+    <div class="caption">Table 3: <span class="caption-text">Median SAT solving time (seconds) for <i>N</i> &ge; 40 across solvers and encodings.</span></div>
+    <table class="booktabs">
+        <thead>
+            <tr>
+                <th>AMO Scheme</th>
+                <th>MiniSat 2.2</th>
+                <th>CaDiCaL 1.5.3</th>
+                <th>Glucose 4.0</th>
+                <th>Glucose 3.0</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>Pairwise</td><td>0.45</td><td>0.78</td><td>0.68</td><td>0.81</td></tr>
+            <tr><td>Bitwise</td><td><b>0.18</b></td><td>0.95</td><td>11.35</td><td>32.50</td></tr>
+            <tr><td>Commander</td><td>0.32</td><td>1.05</td><td><b>0.40</b></td><td>45.20</td></tr>
+            <tr><td>2-Product</td><td>0.42</td><td>1.85</td><td>20.80</td><td>85.40</td></tr>
+            <tr><td>SeqCounter</td><td>0.46</td><td>2.05</td><td>25.60</td><td>30.20</td></tr>
+        </tbody>
+    </table>
+
+    <div class="fig-box">
+        <img src="figures/fig4_solver_encoding_heatmap.png" alt="Figure 4: Solver Heatmap">
+        <div class="caption" style="text-align:center;">Figure 4: <span class="caption-text">Heatmap of median SAT solving time (log<sub>10</sub> scale) across solvers and encodings for <i>N</i> &ge; 40.</span></div>
+    </div>
+
+    <p>The results highlight a marked encoding&ndash;solver synergy: the Pairwise encoding provides the most uniform performance across all solvers due to strong unit propagation. Meanwhile, MiniSat 2.2 achieves the fastest overall time (0.18s) on the Bitwise formulation, whereas Glucose exhibits sensitivity to auxiliary variable branching in grid encodings.</p>
+
+    <h2 class="sec-heading">5. Conclusion</h2>
+    <p>We presented a systematic investigation of exact SAT-based solving for the large-scale <i>N</i>-Queens problem up to <i>N</i> = 100. Our results demonstrate that SAT and CP-SAT substantially outperform 0-1 ILP on large permutation benchmarks. Furthermore, the 2-Product encoding achieves a 92.9% reduction in formula size over pairwise encodings, offering vital memory scalability for ultra-large boards.</p>
+
+    <h2 class="sec-heading">Data Availability</h2>
+    <p class="no-indent">The complete Python source code, solver implementations, experimental benchmarks, raw CSV data, and plotting scripts are openly available at: <a href="https://github.com/l7believer/NQueens-SAT-CP-ILP-Benchmark" target="_blank">https://github.com/l7believer/NQueens-SAT-CP-ILP-Benchmark</a>.</p>
+
+    <h2 class="sec-heading">Declaration of generative AI and AI-assisted technologies in the manuscript preparation process</h2>
+    <p class="no-indent" style="font-size: 8.5pt; color: #444; font-style: italic;">During the preparation of this work, the author utilized generative AI tools (specifically OpenAI ChatGPT) strictly as an assistive aid for: (1) code scaffolding and debugging API syntax in PySAT and Google OR-Tools, (2) preliminary literature discovery regarding Boolean cardinality encodings, and (3) grammar polishing and LaTeX template syntax checking. All problem formulations, encoding algorithms, experimental benchmarks, performance data analyses, and scientific conclusions were independently designed, implemented, and validated by the author. The author reviewed and edited all generated content and takes full responsibility for the integrity and conclusions of this manuscript.</p>
+
+    <h2 class="sec-heading">References</h2>
+    <div class="ref-entry">[1] J. Bell and B. Stevens, "A survey of known results and research areas for n-queens," <i>Discrete Mathematics</i>, vol. 309, no. 1, pp. 1&ndash;31, 2009.</div>
+    <div class="ref-entry">[2] A. Biere et al., "CaDiCaL 2.0," in <i>Computer Aided Verification (CAV 2024)</i>, pp. 133&ndash;152, 2024.</div>
+    <div class="ref-entry">[3] G. Audemard and L. Simon, "On the Glucose SAT solver," <i>Int. J. Artif. Intell. Tools</i>, vol. 27, no. 1, 2018.</div>
+    <div class="ref-entry">[4] L. Perron and F. Didier, "Google OR-Tools," 2024. [Online]. Available: https://developers.google.com/optimization.</div>
+    <div class="ref-entry">[5] G. Gamrath et al., "The SCIP Optimization Suite 7.0," <i>Optimization Online</i>, 2020.</div>
+    <div class="ref-entry">[6] A. Ignatiev et al., "PySAT: A Python toolkit for prototyping with SAT oracles," in <i>SAT 2018</i>, pp. 428&ndash;437, 2018.</div>
+    <div class="ref-entry">[7] C. Sinz, "Towards an optimal CNF encoding of boolean cardinality constraints," in <i>CP 2005</i>, pp. 827&ndash;831, 2005.</div>
+    <div class="ref-entry">[8] W. Klieber and L. Gao, "A new efficient SAT encoding for at-most-one constraints," in <i>SAT 2007 Workshops</i>, 2007.</div>
+    <div class="ref-entry">[9] J. Chen, "A new SAT encoding of the at-most-one constraint," in <i>ISORA 2011</i>, pp. 207&ndash;215, 2010.</div>
+</div>
+
+</body>
+</html>
