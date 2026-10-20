@@ -1,121 +1,111 @@
-# Large-Scale N-Queens Solver: SAT, CP, and ILP Comparative Benchmark
+# N-Queens Problem: Exact Solving with SAT, CP, and ILP
 
-> **Bài tập lớn số 1 — Môn Các vấn đề hiện đại KHMT**  
-> Trường Đại học Công nghệ, Đại học Quốc gia Hà Nội (VNU-UET)
-
----
-
-## 📌 Giới thiệu đề tài (Overview)
-
-Bài toán xếp $N$ quân Hậu ($N$-Queens Problem) là bài toán kinh điển trong lý thuyết tối ưu tổ hợp và lý thuyết ràng buộc: Tìm cách đặt $N$ quân Hậu trên bàn cờ $N \times N$ sao cho không có 2 quân Hậu nào ăn nhau (không cùng hàng, cùng cột hay cùng bất kỳ đường chéo nào).
-
-Dự án này triển khai bộ giải chính xác quy mô lớn ($N \le 100$, tương đương bàn cờ $10.000$ ô cờ) trên 3 trường phái giải toán chính xác hiện đại:
-1. **SAT Solving (PySAT)**: Mô hình hóa logic mệnh đề CNF với các bộ giải CDCL hàng đầu: `Glucose 4.0`, `CaDiCaL 1.5.3`, `MiniSat 2.2`.
-2. **Constraint Programming (Google OR-Tools CP-SAT)**: Gồm 2 mô hình đối chứng:
-   - `CP-AllDiff`: Mô hình 1D số nguyên với 3 ràng buộc toàn cục `AddAllDifferent`.
-   - `CP-Boolean`: Mô hình lưới 2D biến nhị phân $0-1$.
-3. **Integer Linear Programming (ILP/MIP)**: Mô hình quy hoạch nguyên tuyến tính $0-1$ sử dụng `SCIP` và `CBC`.
+Author: Le Trung Hieu (Student ID: 24021475)  
+Faculty of Information Technology, VNU University of Engineering and Technology (VNU-UET)  
+Course: Modern Issues in Computer Science (HK I, 2026-2027)  
+Email: 24021475@vnu.edu.vn  
 
 ---
 
-## 🚀 5 Kỹ thuật mã hóa At-Most-One (AMO) được triển khai
+## Introduction
 
-Theo đúng yêu cầu và khuyến khích của giảng viên, dự án cài đặt và đánh giá toàn diện **5 phương pháp mã hóa AMO**:
-1. **Pairwise (Naive Quadratic)**: Cấm trực tiếp từng cặp biến $(\neg u \lor \neg v)$, số mệnh đề $O(k^2)$, 0 biến phụ.
-2. **Sequential Counter (Sinz 2005)**: Dùng các biến tích lũy phụ, số mệnh đề $O(k)$, $O(k)$ biến phụ.
-3. **Bitwise / Binary**: Mã hóa nhị phân chỉ số của literal, số mệnh đề $O(k \log k)$, $O(\log k)$ biến phụ.
-4. **Commander Variable (Klieber & Gao 2007)**: Chia nhóm và đệ quy bầu biến chỉ huy, số mệnh đề $O(k)$.
-5. **2-Product (Chen 2010)**: Sắp xếp các biến thành lưới ma trận $p \times q$, số mệnh đề chỉ $2k + O(\sqrt{k})$, $2\sqrt{k}$ biến phụ.
+This repository contains the source code, experimental benchmarks, and scientific paper for Assignment 1. The project investigates exact solving approaches for the generalized N-Queens problem on board sizes up to N = 100 (10,000 Boolean decision variables).
 
----
-
-## 📊 Tóm tắt kết quả thực nghiệm nổi bật
-
-### 1. So sánh giữa các trường phái ($N = 4 \dots 100$)
-- **SAT (Glucose4)** và **CP-SAT** giải quyết bàn cờ $100 \times 100$ ($10.000$ ô cờ) cực kỳ nhanh trong **$1.29$ – $2.77$ giây**, đảm bảo nghiệm hợp lệ 100%.
-- **ILP (SCIP)** bị **TIMEOUT (> 20 giây)** ở $N = 100$ do tính chất bài toán khi nới lỏng sang LP relaxation bị nghiệm phân số ($x = 1/N$), làm cây nhánh cận bị bùng nổ tổ hợp.
-
-### 2. Khảo sát độ phức tạp mệnh đề (Ablation Study)
-- Ở $N = 100$, cách mã hóa `Pairwise` bùng nổ tới **$1.646.900$ mệnh đề**.
-- Trong khi đó, kỹ thuật `2-Product` chỉ tốn **$116.636$ mệnh đề** $\rightarrow$ **Giảm tới $92.9\%$ số lượng mệnh đề**, tiết kiệm tối đa bộ nhớ RAM.
+We evaluate three exact combinatorial paradigms:
+- SAT Solving (PySAT): CDCL backends including MiniSat 2.2, CaDiCaL 1.5.3, Glucose 3.0, and Glucose 4.0 across five At-Most-One (AMO) cardinality encodings.
+- Constraint Programming (Google OR-Tools CP-SAT): Both 1D integer formulation with global AllDifferent constraints and 2D Boolean grid formulation.
+- Integer Linear Programming (Google OR-Tools SCIP / CBC): 0-1 binary formulation solved via Branch-and-Bound and LP relaxations.
 
 ---
 
-## 📁 Cấu trúc thư mục (Repository Structure)
+## Implemented AMO Encodings
+
+Five At-Most-One encodings are implemented in `src/sat_encodings.py`:
+1. Pairwise: Direct quadratic baseline without auxiliary variables.
+2. Sequential Counter (Sinz 2005): Linear clause complexity using k - 1 accumulator variables.
+3. Bitwise (Binary): Logarithmic auxiliary variables encoding the binary index of the active literal.
+4. Commander Variable (Klieber & Gao 2007): Disjoint group partitioning (group size g = 3) with recursive commander trees.
+5. 2-Product (Chen 2010): Square matrix coordinate mapping (p x q), producing 2k + O(sqrt(k)) clauses and 2*sqrt(k) auxiliary variables. For short lines (k <= 3), the implementation falls back to pairwise clauses.
+
+---
+
+## Key Experimental Results
+
+- Scalability: SAT solvers (Glucose 4.0: 2.77s, CaDiCaL: 4.03s) and CP-SAT (1.29s) solve N = 100 within a few seconds. All returned board placements are verified by an independent O(N^2) validator.
+- ILP Breakdown: SCIP solves small to medium instances but hits the 20-second timeout at N = 100. Because the uniform fractional assignment x_{r,c} = 1/N satisfies all row, column, and diagonal constraints with zero violation and zero objective cost, the LP relaxation provides no dual bounding cutoffs to prune the Branch-and-Bound search tree.
+- Formula Size: At N = 100, the Pairwise encoding requires 1,646,900 clauses (~185 MB memory in PySAT), while 2-Product requires only 116,636 clauses (~14 MB memory), representing a 92.9% reduction in clause count.
+
+---
+
+## Project Structure
 
 ```text
-├── src/                         # Mã nguồn các solver
-│   ├── __init__.py
-│   ├── sat_encodings.py         # 5 thuật toán mã hóa AMO + hàm dựng CNF
-│   ├── sat_solver.py            # PySAT wrapper (Glucose, CaDiCaL)
-│   ├── cp_solver.py             # OR-Tools CP-SAT (AllDiff & Boolean)
-│   ├── ilp_solver.py            # OR-Tools MIP solver (SCIP, CBC)
-│   └── utils.py                 # Hàm kiểm tra nghiệm & hiển thị bàn cờ
-├── experiments/                 # Mã nguồn chạy thực nghiệm & biểu đồ
-│   ├── benchmark.py             # Script tự động chạy toàn bộ dải N
-│   ├── plot_results.py          # Script vẽ 3 biểu đồ độ phân giải cao 300 DPI
-│   └── results/                 # Dữ liệu CSV và ảnh biểu đồ
-│       ├── benchmark_solvers.csv
-│       ├── benchmark_amo.csv
-│       ├── table_solvers.tex
-│       ├── table_amo.tex
-│       ├── fig1_runtime_comparison.png (.pdf)
-│       ├── fig2_clause_growth.png (.pdf)
-│       └── fig3_amo_runtime.png (.pdf)
-├── paper/                       # Báo cáo khoa học LaTeX chuẩn Elsevier
-│   ├── cas-sc.cls               # Elsevier CAS Single-Column class
-│   ├── cas-common.sty
-│   ├── cas-model2-names.bst
-│   ├── main.tex                 # Báo cáo chính thức đầy đủ nội dung
-│   ├── references.bib           # Tài liệu tham khảo BibTeX
-│   └── figures/                 # Hình ảnh nhúng trong bài báo
-├── paper_overleaf.zip           # File ZIP đóng gói sẵn 1-click tải lên Overleaf
-├── test_solvers.py              # Script test kiểm thử chéo tất cả các solver (N=8)
-├── run_n100.py                  # Script chạy trực tiếp minh họa N=100
-└── README.md                    # Hướng dẫn dự án
+├── src/
+│   ├── sat_encodings.py         # 5 AMO encodings and CNF generator
+│   ├── sat_solver.py            # PySAT wrapper and solution decoder
+│   ├── cp_solver.py             # OR-Tools CP-SAT solvers (1D and 2D)
+│   ├── ilp_solver.py            # OR-Tools MIP solver (SCIP / CBC)
+│   └── utils.py                 # Solution verifier and ASCII board printer
+├── experiments/
+│   ├── benchmark.py             # Automated benchmark runner across N in [4, 100]
+│   ├── plot_results.py          # Script generating figures (PDF / PNG, 300 DPI)
+│   └── results/                 # Raw CSV benchmark outputs and LaTeX tables
+├── paper/
+│   ├── main.tex                 # Elsevier cas-sc LaTeX manuscript
+│   ├── references.bib           # BibTeX references
+│   ├── cas-sc.cls               # Elsevier single-column class
+│   ├── cas-common.sty           # Style package
+│   ├── cas-model2-names.bst     # Bibliography style
+│   └── figures/                 # Vector PDF figures included in the paper
+├── Bai_Bao_BTL_LeTrungHieu_24021475.pdf  # Compiled 9-page research paper
+├── test_solvers.py              # Unit tests for all solvers and encodings (N = 8)
+├── test_scale.py                # Quick scaling check up to N = 100
+├── run_n100.py                  # Standalone solver demonstration on 100x100 board
+├── requirements.txt             # Python dependencies
+└── README.md
 ```
 
 ---
 
-## 🛠 Hướng dẫn cài đặt & Chạy thực nghiệm
+## Setup and Usage
 
-### 1. Cài đặt môi trường
-Yêu cầu Python $\ge 3.10$:
+### Prerequisites
+Python 3.10 or later with dependencies:
 ```bash
 pip install python-sat ortools matplotlib pandas numpy
 ```
 
-### 2. Kiểm thử nhanh các solver
+### Running Tests
+Verify all five AMO encodings, multiple SAT solvers, CP-SAT, and ILP on N = 8:
 ```bash
 python test_solvers.py
 ```
 
-### 3. Chạy giải bàn cờ lớn $N = 100$
+### Solve N = 100 Directly
 ```bash
 python run_n100.py
 ```
 
-### 4. Tái hiện toàn bộ thực nghiệm & Vẽ biểu đồ
+### Reproduce Benchmarks and Figures
 ```bash
 python experiments/benchmark.py
 python experiments/plot_results.py
 ```
 
-### 5. Biên dịch bài báo LaTeX
-- **Cách 1 (Nhanh nhất)**: Tải file `paper_overleaf.zip` lên [Overleaf](https://www.overleaf.com) và nhấn **Recompile**.
-- **Cách 2 (Máy có TeX Live / MiKTeX)**:
-  ```bash
-  cd paper
-  pdflatex main
-  bibtex main
-  pdflatex main
-  pdflatex main
-  ```
+---
+
+## Paper
+
+The paper is typeset using Elsevier's official `cas-sc` (single-column) template:
+- Compiled PDF: `Bai_Bao_BTL_LeTrungHieu_24021475.pdf` (9 pages)
+- LaTeX source: `paper/main.tex`
 
 ---
 
-## 📜 Trích dẫn & Tài liệu tham khảo
-1. Sinz, C. (2005). *Towards an optimal CNF encoding of boolean cardinality constraints*. CP 2005.
-2. Klieber, W., & Gao, L. (2007). *A new efficient SAT encoding for at-most-one constraints*. SAT 2007 Workshops.
-3. Chen, J. (2010). *A new SAT encoding of the at-most-one constraint*. ISORA 2011.
-4. Ignatiev, A., Morgado, A., & Marques-Silva, J. (2018). *PySAT: A Python toolkit for prototyping with SAT oracles*. SAT 2018.
+## References
+
+1. C. Sinz, "Towards an optimal CNF encoding of boolean cardinality constraints," in CP 2005, LNCS 3709, pp. 827-831, 2005.
+2. W. Klieber and L. Gao, "A new efficient SAT encoding for at-most-one constraints," in SAT 2007 Workshops, 2007.
+3. J. Chen, "A new SAT encoding of the at-most-one constraint," in ISORA 2011, pp. 207-215, 2010.
+4. A. Ignatiev, A. Morgado, and J. Marques-Silva, "PySAT: A Python toolkit for prototyping with SAT oracles," in SAT 2018, LNCS 10929, pp. 428-437, 2018.
+5. A. Biere, M. Heule, H. van Maaren, and T. Walsh (Eds.), Handbook of Satisfiability, 2nd ed., IOS Press, 2021.
